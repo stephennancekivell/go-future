@@ -6,7 +6,7 @@ import (
 
 // Future represents a value that might not be ready yet.
 //
-// Create futures with New(func() ... )
+// Create futures with future.New(func() ... )
 //
 // Get the value out with f.Get()
 type Future[T any] interface {
@@ -24,7 +24,7 @@ func (f *futureImpl[T]) Get() T {
 	return f.value
 }
 
-// Creates a new Future running fn in a go routine.
+// Create a new Future running fn in a go routine.
 func New[T any](fn func() T) Future[T] {
 
 	f := futureImpl[T]{}
@@ -42,7 +42,7 @@ type pureFutureImpl[T any] struct {
 	value T
 }
 
-// Creates a new Future from the values.
+// Creates a new Future from the value.
 func Pure[T any](value T) Future[T] {
 	return pureFutureImpl[T]{value}
 }
@@ -50,6 +50,7 @@ func (f pureFutureImpl[T]) Get() T {
 	return f.value
 }
 
+// Turn a list of Futures into a single Future with a list of values.
 func Sequence[T any](xs []Future[T]) Future[[]T] {
 
 	return New(
@@ -62,18 +63,6 @@ func Sequence[T any](xs []Future[T]) Future[[]T] {
 			return ret
 		},
 	)
-}
-
-// TODO TraversePool, TraverseBonded
-func Traverse[A any, B any](xs []A, fn func(value A) Future[B]) Future[[]B] {
-
-	futures := make([]Future[B], len(xs))
-
-	for i, a := range xs {
-		futures[i] = fn(a)
-	}
-
-	return Sequence(futures)
 }
 
 func SequenceFlat[T any](xs []Future[[]T]) Future[[]T] {
@@ -92,6 +81,19 @@ func SequenceFlat[T any](xs []Future[[]T]) Future[[]T] {
 	)
 }
 
+// Turn a list of values into a Future where they are transformed by a function.
+func Traverse[A any, B any](xs []A, fn func(value A) Future[B]) Future[[]B] {
+
+	futures := make([]Future[B], len(xs))
+
+	for i, a := range xs {
+		futures[i] = fn(a)
+	}
+
+	return Sequence(futures)
+}
+
+// Get the fastest value from a number of Futures.
 func Race[T any](head Future[T], rest ...Future[T]) Future[T] {
 	return New(func() T {
 
