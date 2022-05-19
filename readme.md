@@ -2,6 +2,8 @@
 
 A concurrency library for go.
 
+Also see the introductory blog post [Simplifying go concurrency with Future](https://stephenn.com/2022/05/simplifying-go-concurrency-with-future.html)
+
 ## Install
 
 ```
